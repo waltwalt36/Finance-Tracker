@@ -74,15 +74,10 @@ function seededRand(seed) {
   return function() { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
 }
 
-function genPrices(ticker, days) {
-  const rand = seededRand(ticker.split('').reduce((a,c)=>a+c.charCodeAt(0),0));
-  const base = stocks[ticker].base;
-  const prices = [base];
-  for (let i = 1; i < days; i++) {
-    const drift = (rand() - 0.495) * base * 0.025;
-    prices.push(Math.max(prices[i-1] + drift, base * 0.7));
-  }
-  return prices.map(p => +p.toFixed(2));
+async function fetchStock(ticker, period){
+  const response = await fetch(`http://127.0.0.1:5000/stock/${ticker}/${period}`)
+  const data = await response.json()
+  return data
 }
 
 function movingAvg(arr, n) {
@@ -91,19 +86,6 @@ function movingAvg(arr, n) {
     const slice = arr.slice(i - n + 1, i + 1);
     return +(slice.reduce((a,b) => a+b,0) / n).toFixed(2);
   });
-}
-
-function getLabels(days) {
-  const labels = [];
-  const now = new Date(2026, 5, 21);
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    if (days <= 7) labels.push(d.toLocaleDateString('en-US', {weekday:'short'}));
-    else if (days <= 30) labels.push(d.toLocaleDateString('en-US', {month:'short', day:'numeric'}));
-    else labels.push(d.toLocaleDateString('en-US', {month:'short', day:'numeric'}));
-  }
-  return labels;
 }
 
 function daysForRange(r) { return {['1W']:7,['1M']:30,['3M']:90,['1Y']:252}[r]; }
@@ -137,10 +119,10 @@ function forecast(prices) {
   return {fcast, upper, lower};
 }
 
-function render() {
-  const days = daysForRange(activeRange);
-  const prices = genPrices(activeTicker, days);
-  const labels = getLabels(days);
+async function render() {
+  const data = await fetchStock(activeTicker, activeRange);
+  const prices = data.prices;
+  const dates = data.dates;
   const ma20 = movingAvg(prices, Math.min(20, days));
   const ma50 = movingAvg(prices, Math.min(50, days));
   const last = prices[prices.length-1];
@@ -173,7 +155,7 @@ function render() {
   priceChartObj = new Chart(document.getElementById('priceChart'), {
     type: 'line',
     data: {
-      labels,
+      dates,
       datasets: [
         { label: 'Price', data: prices, borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true, backgroundColor: 'rgba(55,138,221,0.06)' },
         { label: 'MA 20', data: ma20, borderColor: '#E24B4A', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0.3 },
@@ -200,7 +182,7 @@ function render() {
   forecastChartObj = new Chart(document.getElementById('forecastChart'), {
     type: 'line',
     data: {
-      labels: fcLabels,
+      dates: fcLabels,
       datasets: [
         { label: 'Forecast', data: fcPrices, borderColor: '#7F77DD', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#7F77DD', tension: 0.3 },
         { label: 'Upper band', data: fcUpper, borderColor: 'rgba(127,119,221,0.3)', borderWidth: 1, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(127,119,221,0.08)' },
