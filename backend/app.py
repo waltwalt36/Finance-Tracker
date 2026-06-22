@@ -9,7 +9,7 @@ CORS(app)
 
 # Helper function to clean up the data pandas returns (particularly the NaN values)
 def clean(lst):
-    return [None if ininstance(x, float) and math.isan(x) else x for x in lst]
+    return [None if isinstance(x, float) and math.isnan(x) else x for x in lst]
 
 @app.route("/")
 def home():

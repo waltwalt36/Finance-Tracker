@@ -119,25 +119,26 @@ function forecast(prices) {
 
 async function render() {
   const data = await fetchStock(activeTicker, activeRange);
+  const rsi = data.rsi;
   const prices = data.prices;
   const dates = data.dates;
   const ma20 = data.moving_average_20;
   const ma50 = data.moving_average_50;
+  const days = prices.length
   const last = prices[prices.length-1];
   const first = prices[0];
   const change = +(last - first).toFixed(2);
   const changePct = +((change/first)*100).toFixed(2);
-  const rsi = data.rsi;
   const rsiLast = rsi[rsi.length - 1]
   const ma20Last = ma20[ma20.length-1] || last;
   const ma50Last = ma50[ma50.length-1] || last;
   const signal = getSignal(rsiLast, ma20Last, ma50Last, last);
-  const vol = data.volume;
+  const vol = +(prices.reduce((a,b,i)=>i>0?a+Math.abs(b-prices[i-1]):a,0)/days*100/last).toFixed(1);
 
   document.getElementById('metricsRow').innerHTML = `
     <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">Price</p><p style="font-size:20px;font-weight:500;margin:0;">$${last.toFixed(2)}</p></div>
     <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">Change</p><p style="font-size:20px;font-weight:500;margin:0;color:${change>=0?'#27500A':'#791F1F'};">${change>=0?'+':''}${change} (${changePct>=0?'+':''}${changePct}%)</p></div>
-    <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">RSI (14)</p><p style="font-size:20px;font-weight:500;margin:0;">${rsi}</p></div>
+    <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">RSI (14)</p><p style="font-size:20px;font-weight:500;margin:0;">${rsiLast}</p></div>
     <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">Volatility</p><p style="font-size:20px;font-weight:500;margin:0;">${vol}%</p></div>
   `;
 
@@ -154,7 +155,7 @@ async function render() {
   priceChartObj = new Chart(document.getElementById('priceChart'), {
     type: 'line',
     data: {
-      dates,
+      labels: dates,
       datasets: [
         { label: 'Price', data: prices, borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true, backgroundColor: 'rgba(55,138,221,0.06)' },
         { label: 'MA 20', data: ma20, borderColor: '#E24B4A', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0.3 },
