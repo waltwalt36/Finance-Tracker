@@ -17,10 +17,10 @@
   <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
     <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="tickerRow"></div>
     <div style="display: flex; gap: 8px;">
-      <button class="tab-btn active" onclick="setRange('1W',this)">1W</button>
-      <button class="tab-btn" onclick="setRange('1M',this)">1M</button>
-      <button class="tab-btn" onclick="setRange('3M',this)">3M</button>
-      <button class="tab-btn" onclick="setRange('1Y',this)">1Y</button>
+      <button class="tab-btn active" onclick="setRange('1mo',this)">1M</button>
+      <button class="tab-btn" onclick="setRange('2mo',this)">2M</button>
+      <button class="tab-btn" onclick="setRange('3mo',this)">3M</button>
+      <button class="tab-btn" onclick="setRange('12mo',this)">1Y</button>
     </div>
   </div>
 
@@ -65,7 +65,7 @@ const stocks = {
 };
 
 let activeTicker = 'AAPL';
-let activeRange = '1W';
+let activeRange = '1mo';
 let priceChartObj = null;
 let forecastChartObj = null;
 
@@ -87,8 +87,6 @@ function movingAvg(arr, n) {
     return +(slice.reduce((a,b) => a+b,0) / n).toFixed(2);
   });
 }
-
-function daysForRange(r) { return {['1W']:7,['1M']:30,['3M']:90,['1Y']:252}[r]; }
 
 function calcRSI(prices, n=14) {
   let gains=0, losses=0;
@@ -123,17 +121,18 @@ async function render() {
   const data = await fetchStock(activeTicker, activeRange);
   const prices = data.prices;
   const dates = data.dates;
-  const ma20 = movingAvg(prices, Math.min(20, days));
-  const ma50 = movingAvg(prices, Math.min(50, days));
+  const ma20 = data.moving_average_20;
+  const ma50 = data.moving_average_50;
   const last = prices[prices.length-1];
   const first = prices[0];
   const change = +(last - first).toFixed(2);
   const changePct = +((change/first)*100).toFixed(2);
-  const rsi = calcRSI(prices);
+  const rsi = data.rsi;
+  const rsiLast = rsi[rsi.length - 1]
   const ma20Last = ma20[ma20.length-1] || last;
   const ma50Last = ma50[ma50.length-1] || last;
-  const signal = getSignal(rsi, ma20Last, ma50Last, last);
-  const vol = +(prices.reduce((a,b,i)=>i>0?a+Math.abs(b-prices[i-1]):a,0)/days*100/last).toFixed(1);
+  const signal = getSignal(rsiLast, ma20Last, ma50Last, last);
+  const vol = data.volume;
 
   document.getElementById('metricsRow').innerHTML = `
     <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">Price</p><p style="font-size:20px;font-weight:500;margin:0;">$${last.toFixed(2)}</p></div>
@@ -182,7 +181,7 @@ async function render() {
   forecastChartObj = new Chart(document.getElementById('forecastChart'), {
     type: 'line',
     data: {
-      dates: fcLabels,
+      labels: fcLabels,
       datasets: [
         { label: 'Forecast', data: fcPrices, borderColor: '#7F77DD', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#7F77DD', tension: 0.3 },
         { label: 'Upper band', data: fcUpper, borderColor: 'rgba(127,119,221,0.3)', borderWidth: 1, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(127,119,221,0.08)' },
