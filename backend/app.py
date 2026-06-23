@@ -1,15 +1,34 @@
+from datetime import datetime, timedelta
 from flask import Flask, jsonify
+from textblob import TextBlob
 from flask_cors import CORS
 import pandas_ta as ta
 import yfinance as yf
+import finnhub
 import math
+import os
 
 app = Flask(__name__)
 CORS(app)
 
+# Initalize finhub using API key
+api_key = os.environ.get("FINNHUB_KEY")
+finnhub_client = finnhub.Client(api_key=api_key)
+
 # Helper function to clean up the data pandas returns (particularly the NaN values)
 def clean(lst):
     return [None if isinstance(x, float) and math.isnan(x) else x for x in lst]
+
+# Helper function to calculate sentiment of a given article
+def get_sentiment(news):
+    score = TextBlob(news).sentiment.polarity
+    # Logic to determine if the news is bullish or bearish or neutral (very simple)
+    if score > 0.1:
+        return "bullish"
+    elif score < -0.1:
+        return "bearish"
+    else:
+        return "neutral"
 
 @app.route("/")
 def home():
@@ -54,6 +73,27 @@ def get_stock(ticker, period):
                     "moving_average_50" : clean(moving_average_50), 
                     "rsi" : clean(rsi)
                     })
+
+# New route to extract news for a specified ticker
+@app.route("/news/<ticker>")
+def get_news(ticker):
+    # Initialize two variables to store todays date and the date one week ago
+    end_date = datetime.today().strftime("%Y-%m-%d")
+    start_date = (datetime.today() - timedelta(days=7)).strftime("%Y-%m-%d")
+
+    # Fetch news using ticker, end date, and start date
+    news = finnhub_client.company_news(ticker, _from=start_date, to=end_date)
+
+    # Validation check to see if no news is returned
+    if not news:
+        return jsonify({"error": "No news found for this ticker"}), 404
+
+    # Iterate through all news articles and get the sentiment of the headline
+    for article in news:
+        article["sentiment"] = get_sentiment(article["headline"])
+
+    return jsonify({"news": news})
+
 
 if __name__ == "__main__":
     app.run(debug=True)
