@@ -24,11 +24,11 @@ def get_sentiment(news):
     score = TextBlob(news).sentiment.polarity
     # Logic to determine if the news is bullish or bearish or neutral (very simple)
     if score > 0.1:
-        return "bullish"
+        return "Bullish"
     elif score < -0.1:
-        return "bearish"
+        return "Bearish"
     else:
-        return "neutral"
+        return "Neutral"
 
 @app.route("/")
 def home():
@@ -79,7 +79,7 @@ def get_stock(ticker, period):
 def get_news(ticker):
     # Initialize two variables to store todays date and the date one week ago
     end_date = datetime.today().strftime("%Y-%m-%d")
-    start_date = (datetime.today() - timedelta(days=7)).strftime("%Y-%m-%d")
+    start_date = (datetime.today() - timedelta(days=0.5)).strftime("%Y-%m-%d")
 
     # Fetch news using ticker, end date, and start date
     news = finnhub_client.company_news(ticker, _from=start_date, to=end_date)
@@ -92,7 +92,7 @@ def get_news(ticker):
     for article in news:
         article["sentiment"] = get_sentiment(article["headline"])
 
-    return jsonify({"news": news})
+    return jsonify({"news": news[:10]})
 
 
 if __name__ == "__main__":
