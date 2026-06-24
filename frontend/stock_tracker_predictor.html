@@ -1,249 +1,293 @@
-
-<style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock-Tracker</title>
+  <style>
+  :root {
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #6b7280;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f9fafb;
+    --color-border-tertiary: #e5e7eb;
+    --color-border-secondary: #d1d5db;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+  }
   .tab-btn { background: none; border: none; padding: 8px 16px; cursor: pointer; font-size: 14px; color: var(--color-text-secondary); border-bottom: 2px solid transparent; border-radius: 0; }
   .tab-btn.active { color: var(--color-text-primary); border-bottom: 2px solid #378ADD; font-weight: 500; }
   .ticker-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); }
   .ticker-badge.active { background: #E6F1FB; color: #0C447C; border-color: #85B7EB; }
   .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 16px; }
   .signal-badge { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-  .signal-buy { background: #EAF3DE; color: #27500A; }
-  .signal-sell { background: #FCEBEB; color: #791F1F; }
-  .signal-hold { background: #FAEEDA; color: #633806; }
-</style>
+  .signal-buy { background: #EAF3DE; color: #27500A; border-radius: var(--border-radius-lg); }
+  .signal-sell { background: #FCEBEB; color: #791F1F; border-radius: var(--border-radius-lg); }
+  .signal-hold { background: #FAEEDA; color: #633806; border-radius: var(--border-radius-lg); }
+  </style>
+</head>
+<body>
+  <h2 class="sr-only">Interactive stock market tracker and predictor with simulated price data, technical indicators, and trading signals</h2>
+  <input type = "search" placeholder="GOOG" id="site-search">
+  <button id="search-btn">Search</button>
 
-<h2 class="sr-only">Interactive stock market tracker and predictor with simulated price data, technical indicators, and trading signals</h2>
-<input type = "search" placeholder="GOOG" id="site-search">
-<button id="search-btn">Search</button>
+  <div style="padding: 1rem 0;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="tickerRow"></div>
+      <div style="display: flex; gap: 8px;">
+        <button class="tab-btn active" onclick="setRange('1mo',this)">1M</button>
+        <button class="tab-btn" onclick="setRange('2mo',this)">2M</button>
+        <button class="tab-btn" onclick="setRange('3mo',this)">3M</button>
+        <button class="tab-btn" onclick="setRange('12mo',this)">1Y</button>
+      </div>
+    </div>
 
-<div style="padding: 1rem 0;">
-  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-    <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="tickerRow"></div>
-    <div style="display: flex; gap: 8px;">
-      <button class="tab-btn active" onclick="setRange('1mo',this)">1M</button>
-      <button class="tab-btn" onclick="setRange('2mo',this)">2M</button>
-      <button class="tab-btn" onclick="setRange('3mo',this)">3M</button>
-      <button class="tab-btn" onclick="setRange('12mo',this)">1Y</button>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 16px;" id="metricsRow"></div>
+
+    <div style="position: relative; width: 100%; height: 260px; margin-bottom: 16px;">
+      <canvas id="priceChart" role="img" aria-label="Stock price chart with moving averages"></canvas>
+    </div>
+
+    <div style="display: flex; gap: 16px; font-size: 12px; color: var(--color-text-secondary); margin-bottom: 20px; flex-wrap: wrap;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:24px;height:2px;background:#378ADD;display:inline-block;"></span>Price</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:24px;height:2px;background:#E24B4A;display:inline-block;border-top: 2px dashed #E24B4A;"></span>MA (20)</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:24px;height:2px;background:#639922;display:inline-block;border-top: 2px dashed #639922;"></span>MA (50)</span>
+    </div>
+
+    <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 16px;">
+      <p style="font-size: 13px; font-weight: 500; margin: 0 0 12px; color: var(--color-text-secondary);">Technical signals</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;" id="signalsRow"></div>
+    </div>
+
+    <p>News</p>
+    <div id="newsContainer"></div>
+
+    <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 16px; margin-top: 16px;">
+      <p style="font-size: 13px; font-weight: 500; margin: 0 0 12px; color: var(--color-text-secondary);">Price forecast (next 5 days) — simulated ML model</p>
+      <div style="position: relative; width: 100%; height: 180px;">
+        <canvas id="forecastChart" role="img" aria-label="5-day price forecast with confidence band"></canvas>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px; text-align: center;">
+      <button onclick="sendPrompt('Explain how moving average crossover trading strategies work')" style="font-size: 13px;">Learn about MA crossover strategy ↗</button>
+      <button onclick="sendPrompt('How does RSI help predict stock movements?')" style="font-size: 13px; margin-left: 8px;">What does RSI mean? ↗</button>
     </div>
   </div>
 
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 16px;" id="metricsRow"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script>
+  const stocks = {
+    AAPL: { name: 'Apple', base: 211, color: '#378ADD' },
+    MSFT: { name: 'Microsoft', base: 445, color: '#7F77DD' },
+    NVDA: { name: 'Nvidia', base: 137, color: '#1D9E75' },
+    TSLA: { name: 'Tesla', base: 248, color: '#D85A30' },
+    AMZN: { name: 'Amazon', base: 222, color: '#BA7517' },
+  };
 
-  <div style="position: relative; width: 100%; height: 260px; margin-bottom: 16px;">
-    <canvas id="priceChart" role="img" aria-label="Stock price chart with moving averages"></canvas>
-  </div>
+  let activeTicker = 'AAPL';
+  let activeRange = '1mo';
+  let priceChartObj = null;
+  let forecastChartObj = null;
 
-  <div style="display: flex; gap: 16px; font-size: 12px; color: var(--color-text-secondary); margin-bottom: 20px; flex-wrap: wrap;">
-    <span style="display:flex;align-items:center;gap:4px;"><span style="width:24px;height:2px;background:#378ADD;display:inline-block;"></span>Price</span>
-    <span style="display:flex;align-items:center;gap:4px;"><span style="width:24px;height:2px;background:#E24B4A;display:inline-block;border-top: 2px dashed #E24B4A;"></span>MA (20)</span>
-    <span style="display:flex;align-items:center;gap:4px;"><span style="width:24px;height:2px;background:#639922;display:inline-block;border-top: 2px dashed #639922;"></span>MA (50)</span>
-  </div>
-
-  <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 16px;">
-    <p style="font-size: 13px; font-weight: 500; margin: 0 0 12px; color: var(--color-text-secondary);">Technical signals</p>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;" id="signalsRow"></div>
-  </div>
-
-  <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 16px; margin-top: 16px;">
-    <p style="font-size: 13px; font-weight: 500; margin: 0 0 12px; color: var(--color-text-secondary);">Price forecast (next 5 days) — simulated ML model</p>
-    <div style="position: relative; width: 100%; height: 180px;">
-      <canvas id="forecastChart" role="img" aria-label="5-day price forecast with confidence band"></canvas>
-    </div>
-  </div>
-
-  <div style="margin-top: 16px; text-align: center;">
-    <button onclick="sendPrompt('Explain how moving average crossover trading strategies work')" style="font-size: 13px;">Learn about MA crossover strategy ↗</button>
-    <button onclick="sendPrompt('How does RSI help predict stock movements?')" style="font-size: 13px; margin-left: 8px;">What does RSI mean? ↗</button>
-  </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script>
-const stocks = {
-  AAPL: { name: 'Apple', base: 211, color: '#378ADD' },
-  MSFT: { name: 'Microsoft', base: 445, color: '#7F77DD' },
-  NVDA: { name: 'Nvidia', base: 137, color: '#1D9E75' },
-  TSLA: { name: 'Tesla', base: 248, color: '#D85A30' },
-  AMZN: { name: 'Amazon', base: 222, color: '#BA7517' },
-};
-
-let activeTicker = 'AAPL';
-let activeRange = '1mo';
-let priceChartObj = null;
-let forecastChartObj = null;
-
-function seededRand(seed) {
-  let s = seed;
-  return function() { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
-}
-
-async function fetchStock(ticker, period){
-  const response = await fetch(`http://127.0.0.1:5000/stock/${ticker}/${period}`)
-  const data = await response.json()
-  return data
-}
-
-function movingAvg(arr, n) {
-  return arr.map((_, i) => {
-    if (i < n - 1) return null;
-    const slice = arr.slice(i - n + 1, i + 1);
-    return +(slice.reduce((a,b) => a+b,0) / n).toFixed(2);
-  });
-}
-
-function calcRSI(prices, n=14) {
-  let gains=0, losses=0;
-  for(let i=1;i<=n;i++){const d=prices[i]-prices[i-1];d>0?gains+=d:losses-=d;}
-  const avgG=gains/n, avgL=losses/n;
-  if(avgL===0) return 100;
-  return +(100 - 100/(1+avgG/avgL)).toFixed(1);
-}
-
-function getSignal(rsi, ma20, ma50, lastPrice) {
-  if (rsi < 35 && lastPrice > ma20) return 'buy';
-  if (rsi > 65 && lastPrice < ma20) return 'sell';
-  if (ma20 > ma50) return 'buy';
-  if (ma20 < ma50) return 'sell';
-  return 'hold';
-}
-
-function forecast(prices) {
-  const last = prices[prices.length-1];
-  const trend = (prices[prices.length-1] - prices[prices.length-6]) / 5;
-  const fcast = [], upper = [], lower = [];
-  for(let i=1;i<=5;i++){
-    const f = +(last + trend*i).toFixed(2);
-    fcast.push(f);
-    upper.push(+(f * 1.015).toFixed(2));
-    lower.push(+(f * 0.985).toFixed(2));
+  // Function to fetch stock information from my stock endpoint
+  async function fetchStock(ticker, period){
+    const response = await fetch(`http://127.0.0.1:5000/stock/${ticker}/${period}`)
+    const data = await response.json()
+    return data
   }
-  return {fcast, upper, lower};
-}
 
-async function render() {
-  const data = await fetchStock(activeTicker, activeRange);
-  const rsi = data.rsi;
-  const prices = data.prices;
-  const dates = data.dates;
-  const ma20 = data.moving_average_20;
-  const ma50 = data.moving_average_50;
-  const days = prices.length
-  const last = prices[prices.length-1];
-  const first = prices[0];
-  const change = +(last - first).toFixed(2);
-  const changePct = +((change/first)*100).toFixed(2);
-  const rsiLast = rsi[rsi.length - 1]
-  const ma20Last = ma20[ma20.length-1] || last;
-  const ma50Last = ma50[ma50.length-1] || last;
-  const signal = getSignal(rsiLast, ma20Last, ma50Last, last);
-  const vol = +(prices.reduce((a,b,i)=>i>0?a+Math.abs(b-prices[i-1]):a,0)/days*100/last).toFixed(1);
+  // Function to fetch stock news from my news endpoint
+  async function fetchNews(ticker){
+    const response = await fetch(`http://127.0.0.1:5000/news/${ticker}`)
+    const data = await response.json()
+    return data
+  }
 
-  document.getElementById('metricsRow').innerHTML = `
+  function getSignal(rsi, ma20, ma50, lastPrice) {
+    if (rsi < 35 && lastPrice > ma20) return 'buy';
+    if (rsi > 65 && lastPrice < ma20) return 'sell';
+    if (ma20 > ma50) return 'buy';
+    if (ma20 < ma50) return 'sell';
+    return 'hold';
+  }
+
+  function forecast(prices) {
+    const last = prices[prices.length-1];
+    const trend = (prices[prices.length-1] - prices[prices.length-6]) / 5;
+    const fcast = [], upper = [], lower = [];
+    for(let i=1;i<=5;i++){
+      const f = +(last + trend*i).toFixed(2);
+      fcast.push(f);
+      upper.push(+(f * 1.015).toFixed(2));
+      lower.push(+(f * 0.985).toFixed(2));
+    }
+    return {fcast, upper, lower};
+  }
+
+  function renderNews(articles){
+    // Define container to store news articles  
+    const container = document.getElementById('newsContainer');
+
+    // Iterate through articles and generate a card for each article 
+    container.innerHTML = articles.map(article => {
+      // Variable to hold the converted UNIX date
+      const date = new Date(article.datetime * 1000).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      })
+      // Variable to hold css style for a given sentiment
+      const sentimentClass = {
+        Bullish: 'signal-buy',
+        Bearish: 'signal-sell',
+        Neutral: 'signal-hold'
+      }[article.sentiment]
+
+      return `<div style="border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1rem; margin-bottom: 10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <p class="signal-badge ${sentimentClass}" style="margin:-2;">${article.sentiment}</p>
+                  <p style="margin:0; font-size:13px; color:var(--color-text-secondary);">${article.source}</p>
+                </div>
+                <p style="font-size:14px; font-weight:500; margin:0 0 6px;">${article.headline}</p>
+                <p style="color:var(--color-text-secondary); font-size:13px;">${article.summary}</p>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <p style="font-size:12px; color:var(--color-text-secondary);">${date}</p>
+                  <a href="${article.url}" target="_blank">Read more</a>
+                </div>
+              </div>`
+    }).join('')
+  }
+
+  async function render() {
+    const data = await fetchStock(activeTicker, activeRange);
+    const news = await fetchNews(activeTicker);
+    const rsi = data.rsi;
+    const prices = data.prices;
+    const dates = data.dates;
+    const ma20 = data.moving_average_20;
+    const ma50 = data.moving_average_50;
+    const articles = news.news
+    const days = prices.length
+    const last = prices[prices.length-1];
+    const first = prices[0];
+    const change = +(last - first).toFixed(2);
+    const changePct = +((change/first)*100).toFixed(2);
+    const rsiLast = rsi[rsi.length - 1]
+    const ma20Last = ma20[ma20.length-1] || last;
+    const ma50Last = ma50[ma50.length-1] || last;
+    const signal = getSignal(rsiLast, ma20Last, ma50Last, last);
+    const vol = +(prices.reduce((a,b,i)=>i>0?a+Math.abs(b-prices[i-1]):a,0)/days*100/last).toFixed(1);
+
+    renderNews(articles);
+    
+    document.getElementById('metricsRow').innerHTML = `
     <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">Price</p><p style="font-size:20px;font-weight:500;margin:0;">$${last.toFixed(2)}</p></div>
     <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">Change</p><p style="font-size:20px;font-weight:500;margin:0;color:${change>=0?'#27500A':'#791F1F'};">${change>=0?'+':''}${change} (${changePct>=0?'+':''}${changePct}%)</p></div>
     <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">RSI (14)</p><p style="font-size:20px;font-weight:500;margin:0;">${rsiLast}</p></div>
     <div class="metric"><p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">Volatility</p><p style="font-size:20px;font-weight:500;margin:0;">${vol}%</p></div>
-  `;
-
-  const signalClass = {buy:'signal-buy',sell:'signal-sell',hold:'signal-hold'}[signal];
-  const signalLabel = signal.charAt(0).toUpperCase()+signal.slice(1);
-  document.getElementById('signalsRow').innerHTML = `
+    `;
+    
+    const signalClass = {buy:'signal-buy',sell:'signal-sell',hold:'signal-hold'}[signal];
+    const signalLabel = signal.charAt(0).toUpperCase()+signal.slice(1);
+    document.getElementById('signalsRow').innerHTML = `
     <div class="metric" style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--color-text-secondary);">Overall</span><span class="signal-badge ${signalClass}">${signalLabel}</span></div>
     <div class="metric" style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--color-text-secondary);">MA Cross</span><span class="signal-badge ${ma20Last>ma50Last?'signal-buy':'signal-sell'}">${ma20Last>ma50Last?'Bullish':'Bearish'}</span></div>
     <div class="metric" style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--color-text-secondary);">RSI signal</span><span class="signal-badge ${rsi<40?'signal-buy':rsi>60?'signal-sell':'signal-hold'}">${rsi<40?'Oversold':rsi>60?'Overbought':'Neutral'}</span></div>
     <div class="metric" style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--color-text-secondary);">Trend</span><span class="signal-badge ${change>=0?'signal-buy':'signal-sell'}">${change>=0?'Uptrend':'Downtrend'}</span></div>
-  `;
-
-  if (priceChartObj) priceChartObj.destroy();
-  priceChartObj = new Chart(document.getElementById('priceChart'), {
-    type: 'line',
-    data: {
-      labels: dates,
-      datasets: [
-        { label: 'Price', data: prices, borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true, backgroundColor: 'rgba(55,138,221,0.06)' },
-        { label: 'MA 20', data: ma20, borderColor: '#E24B4A', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0.3 },
-        { label: 'MA 50', data: ma50, borderColor: '#639922', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0.3 },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-      scales: {
-        x: { ticks: { autoSkip: true, maxTicksLimit: 8, font: { size: 11 } }, grid: { display: false } },
-        y: { ticks: { font: { size: 11 }, callback: v => '$'+v.toFixed(0) }, grid: { color: 'rgba(128,128,128,0.1)' } }
+    `;
+    
+    if (priceChartObj) priceChartObj.destroy();
+    priceChartObj = new Chart(document.getElementById('priceChart'), {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [
+          { label: 'Price', data: prices, borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true, backgroundColor: 'rgba(55,138,221,0.06)' },
+          { label: 'MA 20', data: ma20, borderColor: '#E24B4A', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0.3 },
+          { label: 'MA 50', data: ma50, borderColor: '#639922', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0.3 },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+        scales: {
+          x: { ticks: { autoSkip: true, maxTicksLimit: 8, font: { size: 11 } }, grid: { display: false } },
+          y: { ticks: { font: { size: 11 }, callback: v => '$'+v.toFixed(0) }, grid: { color: 'rgba(128,128,128,0.1)' } }
+        }
       }
+    });
+
+    const fc = forecast(prices);
+    const fcLabels = ['Today','D+1','D+2','D+3','D+4','D+5'];
+    const fcPrices = [last, ...fc.fcast];
+    const fcUpper = [last, ...fc.upper];
+    const fcLower = [last, ...fc.lower];
+    
+    if (forecastChartObj) forecastChartObj.destroy();
+    forecastChartObj = new Chart(document.getElementById('forecastChart'), {
+      type: 'line',
+      data: {
+        labels: fcLabels,
+        datasets: [
+          { label: 'Forecast', data: fcPrices, borderColor: '#7F77DD', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#7F77DD', tension: 0.3 },
+          { label: 'Upper band', data: fcUpper, borderColor: 'rgba(127,119,221,0.3)', borderWidth: 1, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(127,119,221,0.08)' },
+          { label: 'Lower band', data: fcLower, borderColor: 'rgba(127,119,221,0.3)', borderWidth: 1, pointRadius: 0 },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+        scales: {
+          x: { ticks: { font: { size: 11 } }, grid: { display: false } },
+          y: { ticks: { font: { size: 11 }, callback: v => '$'+v.toFixed(0) }, grid: { color: 'rgba(128,128,128,0.1)' } }
+        }
+      }
+    });
+  }
+
+  // Search input and button
+  const searchButton = document.getElementById('search-btn');
+  const searchInput = document.getElementById('site-search');
+
+  function handleSearch(){
+    const ticker = searchInput.value.toUpperCase();
+    // Validate ticker
+    if (ticker === ""){
+      return "Invalid: Empty Ticker";
     }
+    setTicker(ticker);
+  }
+
+  searchButton.addEventListener("click", handleSearch);
+  searchInput.addEventListener("keydown", function(event){
+    if (event.key == "Enter"){
+      handleSearch();
+    }
+  })
+
+  function setTicker(t) {
+    activeTicker = t;
+    document.querySelectorAll('.ticker-badge').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+    render();
+  }
+
+  function setRange(r, el) {
+    activeRange = r;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+
+  const row = document.getElementById('tickerRow');
+  Object.entries(stocks).forEach(([t, s]) => {
+    const b = document.createElement('button');
+    b.className = 'ticker-badge' + (t===activeTicker?' active':'');
+    b.dataset.t = t;
+    b.textContent = t;
+    b.onclick = () => setTicker(t);
+    row.appendChild(b);
   });
 
-  const fc = forecast(prices);
-  const fcLabels = ['Today','D+1','D+2','D+3','D+4','D+5'];
-  const fcPrices = [last, ...fc.fcast];
-  const fcUpper = [last, ...fc.upper];
-  const fcLower = [last, ...fc.lower];
-
-  if (forecastChartObj) forecastChartObj.destroy();
-  forecastChartObj = new Chart(document.getElementById('forecastChart'), {
-    type: 'line',
-    data: {
-      labels: fcLabels,
-      datasets: [
-        { label: 'Forecast', data: fcPrices, borderColor: '#7F77DD', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#7F77DD', tension: 0.3 },
-        { label: 'Upper band', data: fcUpper, borderColor: 'rgba(127,119,221,0.3)', borderWidth: 1, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(127,119,221,0.08)' },
-        { label: 'Lower band', data: fcLower, borderColor: 'rgba(127,119,221,0.3)', borderWidth: 1, pointRadius: 0 },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-      scales: {
-        x: { ticks: { font: { size: 11 } }, grid: { display: false } },
-        y: { ticks: { font: { size: 11 }, callback: v => '$'+v.toFixed(0) }, grid: { color: 'rgba(128,128,128,0.1)' } }
-      }
-    }
-  });
-}
-
-// Search input and button
-const searchButton = document.getElementById('search-btn');
-const searchInput = document.getElementById('site-search');
-
-function handleSearch(){
-  const ticker = searchInput.value.toUpperCase();
-  // Validate ticker
-  if (ticker === ""){
-    return "Invalid: Empty Ticker";
-  }
-  setTicker(ticker);
-}
-
-searchButton.addEventListener("click", handleSearch);
-searchInput.addEventListener("keydown", function(event){
-  if (event.key == "Enter"){
-    handleSearch();
-  }
-})
-
-function setTicker(t) {
-  activeTicker = t;
-  document.querySelectorAll('.ticker-badge').forEach(b => b.classList.toggle('active', b.dataset.t === t));
   render();
-}
-
-function setRange(r, el) {
-  activeRange = r;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  render();
-}
-
-const row = document.getElementById('tickerRow');
-Object.entries(stocks).forEach(([t, s]) => {
-  const b = document.createElement('button');
-  b.className = 'ticker-badge' + (t===activeTicker?' active':'');
-  b.dataset.t = t;
-  b.textContent = t;
-  b.onclick = () => setTicker(t);
-  row.appendChild(b);
-});
-
-render();
-</script>
+  </script>
+</body>
+</html>
