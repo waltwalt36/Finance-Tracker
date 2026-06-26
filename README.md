@@ -89,4 +89,23 @@ Open `frontend/stock_tracker_predictor.html` directly in a browser. It expects t
 }
 ```
 
+### `/news` response fields
+
+```json
+{
+  "news": [
+    {
+      "datetime": 1719360000,
+      "headline": "Apple Reports Record Q2 Earnings",
+      "summary": "Apple Inc. reported earnings that beat analyst expectations...",
+      "source": "Reuters",
+      "url": "https://...",
+      "sentiment": "Bullish"
+    }
+  ]
+}
+```
+
+Returns up to 10 articles. `sentiment` is appended server-side and will be `"Bullish"`, `"Bearish"`, or `"Neutral"`. All other fields come directly from the Finnhub API. `datetime` is a UNIX timestamp.
+
 Valid `period` values: `1mo`, `2mo`, `3mo`, `6mo`, `12mo`
