@@ -68,11 +68,6 @@
         <canvas id="forecastChart" role="img" aria-label="5-day price forecast with confidence band"></canvas>
       </div>
     </div>
-
-    <div style="margin-top: 16px; text-align: center;">
-      <button onclick="sendPrompt('Explain how moving average crossover trading strategies work')" style="font-size: 13px;">Learn about MA crossover strategy ↗</button>
-      <button onclick="sendPrompt('How does RSI help predict stock movements?')" style="font-size: 13px; margin-left: 8px;">What does RSI mean? ↗</button>
-    </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -142,14 +137,14 @@
         Neutral: 'signal-hold'
       }[article.sentiment]
 
-      return `<div style="width:300px; flex-shrink:0; border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1rem; margin-bottom: 10px;">
+      return `<div style="width:300px; flex-shrink:0; border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1rem;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                   <p class="signal-badge ${sentimentClass}" style="margin:0;">${article.sentiment}</p>
                   <p style="margin:0; font-size:13px; color:var(--color-text-secondary);">${article.source}</p>
                 </div>
                 <p style="font-size:14px; font-weight:500; margin:0 0 6px;">${article.headline}</p>
                 <p style="color:var(--color-text-secondary); font-size:13px;">${article.summary}</p>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; margin-top:5px">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; margin-top:5px";>
                   <p style="font-size:12px; color:var(--color-text-secondary);">${date}</p>
                   <a href="${article.url}" target="_blank">Read more</a>
                 </div>
