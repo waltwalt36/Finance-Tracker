@@ -65,13 +65,26 @@ def get_stock(ticker, period):
     result_rsi = ta.rsi(data["Close"])
     rsi = result_rsi.round(2).tolist() if result_rsi is not None else []
 
+    # Calculate the Bollinger Bands using the closing price and time frame
+    result_bollinger = ta.bbands(data["Close"], length=20)
+    print(result_bollinger.columns)
+    # Validation check for the bollinger data before trying to access it
+    if result_bollinger is not None:
+        bollinger_lower = result_bollinger["BBL_20_2.0_2.0"].round(2).tolist()  
+        bollinger_upper = result_bollinger["BBU_20_2.0_2.0"].round(2).tolist() 
+    else:
+        bollinger_lower = []
+        bollinger_upper = []
+
     # Return JSON from a dictionary containing dates and prices
     return jsonify({"dates" : dates, 
                     "prices" : clean(prices),
                     "volume" : volume, 
                     "moving_average_20" : clean(moving_average_20), 
                     "moving_average_50" : clean(moving_average_50), 
-                    "rsi" : clean(rsi)
+                    "rsi" : clean(rsi),
+                    "bollinger_lower" : clean(bollinger_lower),
+                    "bollinger_upper" : clean(bollinger_upper)
                     })
 
 # New route to extract news for a specified ticker
