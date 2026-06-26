@@ -89,6 +89,8 @@ Open `frontend/stock_tracker_predictor.html` directly in a browser. It expects t
 }
 ```
 
+Valid `period` values: `1mo`, `2mo`, `3mo`, `6mo`, `12mo`
+
 ### `/news` response fields
 
 ```json
@@ -108,4 +110,3 @@ Open `frontend/stock_tracker_predictor.html` directly in a browser. It expects t
 
 Returns up to 10 articles. `sentiment` is appended server-side and will be `"Bullish"`, `"Bearish"`, or `"Neutral"`. All other fields come directly from the Finnhub API. `datetime` is a UNIX timestamp.
 
-Valid `period` values: `1mo`, `2mo`, `3mo`, `6mo`, `12mo`
