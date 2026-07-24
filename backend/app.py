@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from flask import Flask, jsonify
+from dotenv import load_dotenv
 from textblob import TextBlob
 from flask_cors import CORS
 import pandas_ta as ta
@@ -10,6 +11,8 @@ import os
 
 app = Flask(__name__)
 CORS(app)
+
+load_dotenv()
 
 # Initalize finhub using API key
 api_key = os.environ.get("FINNHUB_KEY")
@@ -109,4 +112,4 @@ def get_news(ticker):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)

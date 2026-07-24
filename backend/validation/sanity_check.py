@@ -89,7 +89,7 @@ def compare_indicators(name, ta_values, manual_values, tolerance=0.01, warmup=10
         else:
             failed += 1
 
-    print(f"\n{name} Summary: {passed} passed, {failed} failed")
+    print(f"{name} Summary: {passed} passed, {failed} failed")
 
 # RSI comparison
 sample_series = pd.Series(sample_prices)
