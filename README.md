@@ -37,17 +37,21 @@ Finance-Tracker/
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.10–3.13 (Python 3.14+ has compatibility issues with pandas-ta dependencies)
 - A free [Finnhub API key](https://finnhub.io)
 
 ### Backend
 
 ```bash
 cd backend
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install flask flask-cors yfinance finnhub-python pandas-ta textblob python-dotenv
 ```
+
+**Note:** If you have Python 3.14+, install Python 3.13 first:
+- **macOS:** Download from [python.org/downloads](https://www.python.org/downloads/), then use `python3.13 -m venv venv`
+- **Other OS:** Similar process, ensure Python 3.13 is in your PATH
 
 Create `backend/.env`:
 
