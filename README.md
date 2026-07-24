@@ -26,8 +26,9 @@ A lightweight stock analysis tool with a Python/Flask backend and a single-page 
 ```
 Finance-Tracker/
 ├── backend/
-│   ├── app.py        # Flask API
-│   └── .env          # API keys (not committed)
+│   ├── app.py              # Flask API
+│   ├── sanity_check.py     # Validation tests for SMA & RSI calculations
+│   └── .env                # API keys (not committed)
 └── frontend/
     └── stock_tracker_predictor.html
 ```
@@ -109,4 +110,15 @@ Valid `period` values: `1mo`, `2mo`, `3mo`, `6mo`, `12mo`
 ```
 
 Returns up to 10 articles. `sentiment` is appended server-side and will be `"Bullish"`, `"Bearish"`, or `"Neutral"`. All other fields come directly from the Finnhub API. `datetime` is a UNIX timestamp.
+
+## Validation
+
+**sanity_check.py** contains manual implementations of SMA (Simple Moving Average) and RSI (Relative Strength Index) calculations, used to verify that the pandas-ta library outputs match expected values. Run this file to compare manual calculations against pandas-ta results:
+
+```bash
+cd backend
+python sanity_check.py
+```
+
+This is useful for validating technical indicator accuracy and understanding the calculation logic behind the signals.
 
