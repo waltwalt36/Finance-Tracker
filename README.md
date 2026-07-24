@@ -120,7 +120,7 @@ Returns up to 10 articles. `sentiment` is appended server-side and will be `"Bul
 **sanity_check.py** contains manual implementations of SMA (Simple Moving Average) and RSI (Relative Strength Index) calculations, used to verify that the pandas-ta library outputs match expected values. Run this file to compare manual calculations against pandas-ta results:
 
 ```bash
-cd backend
+cd backend/validation
 python sanity_check.py
 ```
 
