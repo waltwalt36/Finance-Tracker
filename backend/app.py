@@ -48,7 +48,7 @@ def home():
     return "Stock API is running!"
 
 # Route to extract a specific stocks data using it's ticker and the desired period/time frame. 
-@app.route("/stock/<ticker>/<period>")
+@app.route("/stock/<ticker>/<period>", methods=["GET"])
 def get_stock(ticker, period):
     # Extarct data from yf
     data = yf.Ticker(ticker).history(period=period)
@@ -101,7 +101,7 @@ def get_stock(ticker, period):
                     })
 
 # New route to extract news for a specified ticker
-@app.route("/news/<ticker>")
+@app.route("/news/<ticker>", methods=["GET"])
 def get_news(ticker):
     # Initialize two variables to store todays date and the date one week ago
     end_date = datetime.today().strftime("%Y-%m-%d")
