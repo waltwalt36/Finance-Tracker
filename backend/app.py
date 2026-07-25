@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
-from flask import Flask, jsonify
+from psycopg2 import errors as pg_errors
+from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 from textblob import TextBlob
 from flask_cors import CORS
 import pandas_ta as ta
 import yfinance as yf
+import psycopg2
 import finnhub
 import math
 import os
@@ -32,6 +34,14 @@ def get_sentiment(news):
         return "Bearish"
     else:
         return "Neutral"
+
+def get_db():
+    return psycopg2.connect(
+        dbname="stock_tracker",
+        user="postgres",
+        password=os.environ.get("DB_PASSWORD"),
+        host="localhost"
+    )
 
 @app.route("/")
 def home():
@@ -110,6 +120,56 @@ def get_news(ticker):
 
     return jsonify({"news": news[:10]})
 
+@app.route("/favorites", methods=["GET"])
+def get_favorites():
+    # Establish a connection with the db
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Execute SQL query
+    cur.execute("SELECT * FROM favorites;")
+
+    # Fetch the query and convert list of tuples into list of dicts
+    rows = cur.fetchall()
+    favorites = [{"id": row[0], "ticker": row[1], "saved_at": row[2]} for row in rows]
+
+    conn.close()
+
+    return jsonify({"favorites": favorites})
+
+@app.route("/favorites/<ticker>", methods=["POST", "DELETE"])
+def favorite(ticker):
+    if request.method == "POST":
+        # Establish a connection with the db
+        conn = get_db()
+        cur = conn.cursor()
+
+        # Execute SQL query (checking if duplicate ticker is found in favorites) and close connection
+        try:
+            cur.execute("INSERT INTO favorites (ticker, saved_at) VALUES (%s, NOW());", (ticker,))
+            conn.commit()
+            return jsonify({"message": f"{ticker} added to favorites"}), 201
+        except pg_errors.UniqueViolation:
+            return jsonify({"error": f"{ticker} is already in favorites"}), 409
+        finally:
+            conn.close()
+        # Establish a connection with the db
+
+    if request.method == "DELETE":
+        conn = get_db()
+        cur = conn.cursor()
+
+        try:
+            # Execute SQL query (checking if ticker is found in favorites) and close connection
+            cur.execute("DELETE FROM favorites WHERE ticker = %s;", (ticker,))
+            # Check if any rows were deleted
+            if cur.rowcount == 0:
+                return jsonify({"error": f"{ticker} not found in favorites"}), 404
+            conn.commit()
+        finally:
+            conn.close()
+
+        return jsonify({"message": f"{ticker} deleted from favorites"}), 200   
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)
