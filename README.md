@@ -28,8 +28,9 @@ A lightweight stock analysis tool with a Python/Flask backend and a single-page 
 Finance-Tracker/
 ├── backend/
 │   ├── app.py              # Flask API
-│   ├── sanity_check.py     # Validation tests for SMA & RSI calculations
-│   └── .env                # API keys (not committed)
+│   ├── .env                # API keys & DB password (not committed)
+│   └── validation/
+│       └── sanity_check.py # Validation tests for SMA & RSI calculations
 └── frontend/
     └── stock_tracker_predictor.html
 ```
