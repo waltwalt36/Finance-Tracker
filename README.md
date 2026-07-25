@@ -17,6 +17,7 @@ A lightweight stock analysis tool with a Python/Flask backend and a single-page 
 | Layer    | Technology |
 |----------|------------|
 | Backend  | Python, Flask, Flask-CORS |
+| Database | PostgreSQL |
 | Data     | yfinance (price history), Finnhub (news) |
 | Analysis | pandas-ta (SMA, RSI, Bollinger Bands), TextBlob (sentiment) |
 | Frontend | Vanilla HTML/CSS/JS, Chart.js 4 |
@@ -57,6 +58,42 @@ Create `backend/.env`:
 
 ```
 FINNHUB_KEY=your_api_key_here
+DB_PASSWORD=your_postgres_password
+```
+
+### Database Setup
+
+Ensure PostgreSQL is installed and running. Create the database and tables:
+
+```bash
+createdb stock_tracker
+psql stock_tracker < schema.sql  # or run the SQL below manually
+```
+
+**Or create tables manually:**
+
+```sql
+CREATE TABLE favorites (
+  id SERIAL PRIMARY KEY,
+  ticker VARCHAR(10) UNIQUE NOT NULL,
+  saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE history (
+  id SERIAL PRIMARY KEY,
+  ticker VARCHAR(10) NOT NULL,
+  viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE news (
+  id SERIAL PRIMARY KEY,
+  ticker VARCHAR(10) NOT NULL,
+  headline TEXT NOT NULL,
+  sentiment VARCHAR(20),
+  url TEXT,
+  source VARCHAR(100),
+  fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 Start the server:
@@ -78,6 +115,9 @@ Open `frontend/stock_tracker_predictor.html` directly in a browser. It expects t
 | GET | `/` | Health check |
 | GET | `/stock/<ticker>/<period>` | Price history + indicators (e.g. `/stock/AAPL/1mo`) |
 | GET | `/news/<ticker>` | Last ~12 hours of news with sentiment (e.g. `/news/AAPL`) |
+| GET | `/favorites` | Get all favorite tickers |
+| POST | `/favorites/<ticker>` | Add a ticker to favorites |
+| DELETE | `/favorites/<ticker>` | Remove a ticker from favorites |
 
 ### `/stock` response fields
 
@@ -114,6 +154,68 @@ Valid `period` values: `1mo`, `2mo`, `3mo`, `6mo`, `12mo`
 ```
 
 Returns up to 10 articles. `sentiment` is appended server-side and will be `"Bullish"`, `"Bearish"`, or `"Neutral"`. All other fields come directly from the Finnhub API. `datetime` is a UNIX timestamp.
+
+### `/favorites` response fields
+
+**GET** `/favorites`:
+```json
+{
+  "favorites": [
+    {
+      "id": 1,
+      "ticker": "AAPL",
+      "saved_at": "2026-07-24T10:30:00"
+    }
+  ]
+}
+```
+
+**POST** `/favorites/<ticker>`:
+```json
+{
+  "message": "AAPL added to favorites"
+}
+```
+Returns 201 on success, 409 if ticker is already in favorites.
+
+**DELETE** `/favorites/<ticker>`:
+```json
+{
+  "message": "AAPL deleted from favorites"
+}
+```
+Returns 200 on success, 404 if ticker not found.
+
+## Database
+
+The application uses PostgreSQL with three tables:
+
+### Schema
+
+**favorites** — Stores user's favorite tickers
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL PRIMARY KEY | Unique identifier |
+| ticker | VARCHAR(10) UNIQUE NOT NULL | Stock ticker symbol |
+| saved_at | TIMESTAMP DEFAULT CURRENT_TIMESTAMP | When ticker was favorited |
+
+**history** — Tracks user's search history
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL PRIMARY KEY | Unique identifier |
+| ticker | VARCHAR(10) NOT NULL | Stock ticker symbol |
+| viewed_at | TIMESTAMP DEFAULT CURRENT_TIMESTAMP | When ticker was viewed |
+
+**news** — Caches news articles with sentiment scores
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL PRIMARY KEY | Unique identifier |
+| ticker | VARCHAR(10) NOT NULL | Stock ticker symbol |
+| headline | TEXT NOT NULL | Article headline |
+| sentiment | VARCHAR(20) | Bullish / Neutral / Bearish |
+| url | TEXT | Link to full article |
+| source | VARCHAR(100) | News source |
+| fetched_at | TIMESTAMP DEFAULT CURRENT_TIMESTAMP | When article was cached |
 
 ## Validation
 
